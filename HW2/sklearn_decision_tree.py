@@ -4,13 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def DecisionTree(train_x, train_y, test_x, test_y):
-    clf = DecisionTreeClassifier(random_state=760)
+def DecisionTree(train_x, train_y, test_x, test_y, rng):
+    clf = DecisionTreeClassifier(random_state=rng)
     fit = clf.fit(train_x, train_y)
-    n = fit.tree_.node_count
-    err = 1 - fit.score(test_x, test_y)
-
-    return n, err
+    return fit.tree_.node_count, 1 - fit.score(test_x, test_y)
 
 
 filepath = "data/Dbig.txt"
@@ -29,23 +26,23 @@ D32_x, test32_x, D32_y, test32_y = train_test_split(D128_x, D128_y, train_size=3
 number_of_node = []
 err = []
 
-r8192 = DecisionTree(D8192_x, D8192_y, test8192_x, test8192_y)
+r8192 = DecisionTree(D8192_x, D8192_y, test8192_x, test8192_y, rng)
 number_of_node.append(r8192[0])
 err.append(r8192[1])
 
-r2048 = DecisionTree(D2048_x, D2048_y, test2048_x, test2048_y)
+r2048 = DecisionTree(D2048_x, D2048_y, test2048_x, test2048_y, rng)
 number_of_node.append(r2048[0])
 err.append(r2048[1])
 
-r512 = DecisionTree(D512_x, D512_y, test512_x, test512_y)
+r512 = DecisionTree(D512_x, D512_y, test512_x, test512_y, rng)
 number_of_node.append(r512[0])
 err.append(r512[1])
 
-r128 = DecisionTree(D128_x, D128_y, test128_x, test128_y)
+r128 = DecisionTree(D128_x, D128_y, test128_x, test128_y, rng)
 number_of_node.append(r128[0])
 err.append(r128[1])
 
-r32 = DecisionTree(D32_x, D32_y, test32_x, test32_y)
+r32 = DecisionTree(D32_x, D32_y, test32_x, test32_y, rng)
 number_of_node.append(r32[0])
 err.append(r32[1])
 
