@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-
+from sklearn.model_selection import train_test_split
 
 def CalculateProb(dataset, n):
     prob1 = 0
@@ -39,17 +39,17 @@ def randomData(dataset):
     return D8192, D2048, D512, D128, D32
 
 
-# def CalculateError(dataset, tree):
-#     predictions = []
-#     err = 0
-#     for i in range(0, len(dataset)):
-#         predict = Prediction(tree, dataset[i])
-#         predictions.append(predict)
-#         if predict != dataset[i]:
-#             err = err + 1
-#
-#     n = CalculateNodeNumber(tree)
-#     return n, err, predictions
+def CalculateError(dataset, tree):
+    predictions = []
+    err = 0
+    for i in range(0, len(dataset)):
+        predict = Prediction(tree, dataset[i])
+        predictions.append(predict)
+        if predict != dataset[i]:
+            err = err + 1
+
+    n = CalculateNodeNumber(tree)
+    return n, err, predictions
 
 
 def SubTree(dataset):
@@ -109,6 +109,72 @@ def MakeTree(dataset):
     return {sub_tree: (MakeTree(left), MakeTree(right))}
 
 
+def TestTree(dataset):
+    # base case
+    if len(dataset) == 0:
+        return None
+
+    cns_gain_ratio = 0
+    cns_entropy = 1
+    sub_tree = set
+    number_of_features = dataset.shape[1] - 1
+
+    for i in range(0, number_of_features):
+        feature_data = dataset[:, i]
+        for data in feature_data:
+            right, left = SplitTree(dataset, data, i)
+            gain_ratio = CalculateGainRatio(dataset, right, left)
+
+            entropy = max(CalculateEntropy(left[:, -1]), CalculateEntropy(right[:, -1]))
+            # need recommend for # Q 2.3
+            # print("Info Gain Ratio: {}  Entropy: {}  Info Gain: {}".format(gain_ratio, entropy, gain_ratio*entropy))
+            if entropy < cns_entropy:
+                cns_entropy = entropy
+
+            if gain_ratio > cns_gain_ratio:
+                cns_gain_ratio = gain_ratio
+                sub_tree = (i, data)
+
+
+    # print('data: {}  gain ratio: {}'.format(1, result[1]))
+
+    if cns_gain_ratio == 0 or cns_entropy == 1:
+        data = dataset[:, -1]
+        datum = {}
+        for d in data:
+            if d not in datum.keys():
+                datum[d] = 0
+            datum[d] += 1
+        return max(datum, key=datum.get)
+
+    right, left = SplitTree(dataset, sub_tree[1], sub_tree[0])
+
+    return {sub_tree: (MakeTree(left), MakeTree(right))}
+
+
+def Prediction(tree, data):
+    sub_tree = next(iter(tree))
+    if data[sub_tree[0]] >= sub_tree[1]:
+        if type(tree[sub_tree][0]).__name__  == 'dict':
+            return Prediction(tree[sub_tree][0], data)
+        return tree[sub_tree][0]
+    else:
+        if type(tree[sub_tree][1]).__name__  == 'dict':
+            return Prediction(tree[sub_tree][1], data)
+        return tree[sub_tree][1]
+
+
+def CalculateNodeNumber(tree):
+    sub_tree = next(iter(tree))
+    lnode = 0
+    rnode = 0
+    if type(tree[sub_tree][0]) == 'dict':
+        lnode += CalculateNodeNumber(tree[sub_tree][0])
+    if type(tree[sub_tree][1]) == 'dict':
+        rnode += CalculateNodeNumber(tree[sub_tree][1])
+    return lnode + rnode + 1
+
+
 def CalculateGainRatio(dataset, right, left):
     ln = len(left)
     rn = len(right)
@@ -143,6 +209,34 @@ def plot(data, name):
     file_name = "plot/DecisionTree{}.png".format(name)
     plt.savefig(file_name)
     plt.show()
+
+
+def predict(tree, point):
+    node_condition = next(iter(tree))
+    if point[node_condition[0]] >= node_condition[1]:
+        if type(tree[node_condition][0]).__name__ == 'dict':
+            return predict(tree[node_condition][0],point)
+        else:
+            return tree[node_condition][0]
+    else:
+        if type(tree[node_condition][1]).__name__ == 'dict':
+            return predict(tree[node_condition][1],point)
+        else:
+            return tree[node_condition][1]
+
+
+def get_node_num(tree):
+    condition = next(iter(tree))
+    lnode = 0
+    rnode = 0
+
+    if type(tree[condition][0]).__name__ == 'dict':
+        lnode += get_node_num(tree[condition][0])
+
+    if type(tree[condition][1]).__name__ == 'dict':
+        rnode += get_node_num(tree[condition][1])
+
+    return lnode + rnode + 1
 
 
 # Q 2.2
@@ -185,10 +279,46 @@ print("\nQ 2.6")
 print("\nQ 2.7")
 filepath = "data/Dbig.txt"
 Dbig = np.loadtxt(filepath, delimiter=" ")
-result = randomData(Dbig)
-
+# result = randomData(Dbig)
+# tree = TestTree(result[3])
+#
 # ans = CalculateError(result[3], tree)
 # print(ans[0], ans[1], ans[2])
+
+
+dataset_x = Dbig[:, 0:2]
+dataset_y = Dbig[:, -1]
+
+rng = np.random.RandomState(0)
+# D32 ⊂ D128 ⊂ D512 ⊂ D2048 ⊂ D8192
+D8192_x, test8192_x, D8192_y, test8192_y = train_test_split(dataset_x, dataset_y, train_size=8192, random_state=rng)
+D2048_x, test2048_x, D2048_y, test2048_y = train_test_split(D8192_x, D8192_y, train_size=2048, random_state=rng)
+D512_x, test512_x, D512_y, test512_y = train_test_split(D2048_x, D2048_y, train_size=512, random_state=rng)
+D128_x, test128_x, D128_y, test128_y = train_test_split(D512_x, D512_y, train_size=128, random_state=rng)
+D32_x, test32_x, D32_y, test32_y = train_test_split(D128_x, D128_y, train_size=32, random_state=rng)
+
+number_of_node = []
+err = []
+
+data = np.zeros((len(D32_x), 3))
+for i in range(0, len(D32_x)):
+    data[i] = np.append(D32_x[i], D32_y[i])
+
+data_tree = TestTree(data)
+
+pred = []
+count = 0
+for i in range(0, len(test8192_x)):
+    p = predict(data_tree, test8192_x[i])
+    if p != test8192_y[i]: count += 1
+    pred.append(p)
+
+plt.scatter(test8192_x[:, 0], test8192_x[:, 1], c=2 * np.array(pred) - 1)
+plt.title('D32 - Decision Boundary')
+
+nodenum = get_node_num(data_tree)
+
+
 
 
 

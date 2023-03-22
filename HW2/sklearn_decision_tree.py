@@ -7,7 +7,8 @@ import matplotlib.pyplot as plt
 def DecisionTree(train_x, train_y, test_x, test_y, rng):
     clf = DecisionTreeClassifier(random_state=rng)
     fit = clf.fit(train_x, train_y)
-    return fit.tree_.node_count, 1 - fit.score(test_x, test_y)
+    pre = clf.predict(train_x)
+    return fit.tree_.node_count, 1 - fit.score(test_x, test_y), pre
 
 
 filepath = "data/Dbig.txt"
@@ -29,6 +30,10 @@ err = []
 r8192 = DecisionTree(D8192_x, D8192_y, test8192_x, test8192_y, rng)
 number_of_node.append(r8192[0])
 err.append(r8192[1])
+
+plt.scatter(test8192_x[:,0],test8192_y[:,1],c=2*r8192[2]-1)
+plt.title('D32 - Decision Boundary')
+plt.show()
 
 r2048 = DecisionTree(D2048_x, D2048_y, test2048_x, test2048_y, rng)
 number_of_node.append(r2048[0])
